@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SANO AI-Studio | Tadashi Sano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        base: '#080808',
+                        card: '#151515',
+                        border: '#2e2e2e',
+                        'border-hover': '#444444',
+                        text: {
+                            main: '#f3f4f6',
+                            muted: '#a1a1aa'
+                        },
+                        crimson: {
+                            DEFAULT: '#b91c1c',
+                            dark: '#450a0a',
+                            glow: '#7f1d1d'
+                        },
+                        stone: {
+                            200: '#e7e5e4',
+                            300: '#d6d3d1',
+                            400: '#a8a29e',
+                            500: '#78716c',
+                            700: '#44403c',
+                            800: '#292524',
+                            900: '#1c1917',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #080808;
+            color: #f3f4f6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .solid-card {
+            background-color: #151515;
+            border: 1px solid #2e2e2e;
+            transition: border-color 0.3s ease;
+        }
+
+        .solid-card:hover {
+            border-color: #444444;
+        }
+
+        .image-container {
+            position: relative;
+            background-color: #080808;
+            border-bottom: 1px solid #2e2e2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 10;
+        }
+
+        .fallback-icon {
+            color: #a1a1aa;
+            z-index: 5;
+        }
+
+        /* Print CSS Optimization */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .solid-card {
+                background: #ffffff !important;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                color: #1e293b !important;
+                page-break-inside: avoid;
+                margin-bottom: 24px;
+            }
+
+            h1,
+            h2,
+            h3,
+            h4,
+            p,
+            span,
+            div {
+                color: #000000 !important;
+            }
+
+            * {
+                text-shadow: none !important;
+            }
+
+            .work-card {
+                display: block !important;
+            }
+
+            #work-modal,
+            #modal-bg {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen selection:bg-crimson selection:text-white leading-relaxed">
+
+    <!-- Header / Navbar -->
+    <header
+        class="fixed top-0 w-full bg-[#080808]/90 backdrop-blur-sm border-b border-[#2e2e2e] z-40 no-print transition-colors">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="font-bold text-lg tracking-widest uppercase flex items-center gap-3 text-text-main">
+                <i data-lucide="crosshairs" class="text-text-muted w-5 h-5"></i>
+                <span>SANO <span class="text-text-muted">AI-Studio</span></span>
+            </div>
+            <button onclick="window.print()"
+                class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest bg-[#151515] hover:bg-[#2e2e2e] text-text-muted hover:text-text-main border border-[#2e2e2e] rounded-md px-4 py-2 transition-all">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">PDF / Print</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="pt-32 pb-24 px-6 max-w-6xl mx-auto space-y-20 md:space-y-24">
+
+        <!-- 1. HERO Section -->
+        <section class="text-center space-y-8 animate-fade-in-up">
+            <div
+                class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#2e2e2e] bg-[#151515] text-text-muted text-xs tracking-widest uppercase mb-2">
+                <i data-lucide="radar" class="w-3.5 h-3.5"></i>
+                完全フルリモート対応 / 業務自動化・AIディレクション
+            </div>
+            <h1 class="font-extrabold tracking-tight flex flex-col items-center">
+                <span
+                    class="text-stone-300 text-sm md:text-base tracking-[0.2em] uppercase font-semibold mb-6 shadow-black/50">AI
+                    Full-stack Director</span>
+                <span class="text-5xl md:text-7xl text-white">Tadashi Sano</span>
+            </h1>
+            <p
+                class="text-lg md:text-xl font-light text-text-muted max-w-2xl mx-auto pt-6 leading-relaxed tracking-wide">
+                「最新の生成AIを実務フローに組み込み、<br class="hidden md:block">現場で実証された確かな精度とスピードで、実務の負担を極限まで削減する」
+            </p>
+        </section>
+
+        <!-- 2. BIOGRAPHY -->
+        <section class="space-y-12">
+            <div class="text-center space-y-3">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-widest uppercase text-white">The Origin<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-text-muted text-sm tracking-wide">「AIツールが少し使えるだけの作業者ではありません」</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Bio Cards -->
+                <div class="solid-card rounded-xl p-6 relative">
+                    <div class="text-stone-200 mb-5"><i data-lucide="shield-check" class="w-7 h-7"></i></div>
+                    <h3 class="text-base font-bold mb-1 tracking-wide text-text-main">富士フイルム</h3>
+                    <p class="text-xs text-stone-400 mb-4 tracking-wide">液晶フィルム製造品質管理</p>
+                    <div class="h-px w-full bg-[#2e2e2e] mb-4"></div>
+                    <p class="text-sm text-stone-300 leading-relaxed font-light">ハルシネーション（AI虚偽）を許さない厳格な品質管理（QA）の原点。</p>
+                </div>
+                <div class="solid-card rounded-xl p-6 relative">
+                    <div class="text-stone-200 mb-5"><i data-lucide="message-square-quote" class="w-7 h-7"></i></div>
+                    <h3 class="text-base font-bold mb-1 tracking-wide text-text-main">岳進塾</h3>
+                    <p class="text-xs text-stone-400 mb-4 tracking-wide">小中高生の学習指導</p>
+                    <div class="h-px w-full bg-[#2e2e2e] mb-4"></div>
+                    <p class="text-sm text-stone-300 leading-relaxed font-light">難解な専門知識や法改正を誰にでも直感的に伝える「超・翻訳力」の原点。</p>
+                </div>
+                <div class="solid-card rounded-xl p-6 relative">
+                    <div class="text-stone-200 mb-5"><i data-lucide="settings-2" class="w-7 h-7"></i></div>
+                    <h3 class="text-base font-bold mb-1 tracking-wide text-text-main">王子キノクロス</h3>
+                    <p class="text-xs text-stone-400 mb-4 tracking-wide">9年間の製造・工程改善</p>
+                    <div class="h-px w-full bg-[#2e2e2e] mb-4"></div>
+                    <p class="text-sm text-stone-300 leading-relaxed font-light">現場の泥臭い無駄を徹底的に排除する仕組み化の原点。</p>
+                </div>
+                <div class="solid-card rounded-xl p-6 relative border-t-2 border-t-crimson">
+                    <div class="text-crimson mb-5"><i data-lucide="cpu" class="w-7 h-7"></i></div>
+                    <h3 class="text-base font-bold mb-1 tracking-wide text-text-main">自律型ワークフロー</h3>
+                    <p class="text-xs text-stone-400 mb-4 tracking-wide">持続可能な仕組み化思想</p>
+                    <div class="h-px w-full bg-[#2e2e2e] mb-4"></div>
+                    <p class="text-sm text-stone-300 leading-relaxed font-light">
+                        「作業時間の切り売りから脱却し、パフォーマンスを最大化するために『手作業をゼロにし、AIに仕事を任せる』徹底した自動化思想を確立。」</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. TECH & TOOLS -->
+        <section class="space-y-12">
+            <div class="text-center space-y-3">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-widest uppercase text-white">Tech & Tools<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-text-muted text-sm tracking-wide">高品質・爆速を実現するスキルと技術スタック</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Item -->
+                <div class="solid-card rounded-xl p-6 flex flex-col sm:flex-row gap-5 items-start">
+                    <div class="text-stone-200"><i data-lucide="cpu" class="w-6 h-6"></i></div>
+                    <div>
+                        <h3 class="font-bold text-text-main mb-1.5 tracking-wide">AI / プロンプト設計</h3>
+                        <p class="text-xs text-stone-300 font-mono mb-2">Gemini (Ultra/Adv.), Claude, ChatGPT,
+                            NotebookLM</p>
+                        <p class="text-sm text-text-muted">高度なプロンプト設計・多段監査による成果物生成</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="solid-card rounded-xl p-6 flex flex-col sm:flex-row gap-5 items-start">
+                    <div class="text-stone-200"><i data-lucide="film" class="w-6 h-6"></i></div>
+                    <div>
+                        <h3 class="font-bold text-text-main mb-1.5 tracking-wide">動画 / 音声編集</h3>
+                        <p class="text-xs text-stone-300 font-mono mb-2">Vrew, CapCut Pro, AI Voice Synthesis</p>
+                        <p class="text-sm text-text-muted">※Adobe製品に依存しない爆速編集パイプライン</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="solid-card rounded-xl p-6 flex flex-col sm:flex-row gap-5 items-start">
+                    <div class="text-stone-200"><i data-lucide="plane" class="w-6 h-6"></i></div>
+                    <div>
+                        <h3 class="font-bold text-text-main mb-1.5 tracking-wide">ドローン空撮 / 法務管理</h3>
+                        <p class="text-xs text-stone-300 font-mono mb-2">DJI Mavic 3 Pro, DIPS 2.0 (国土交通省)</p>
+                        <p class="text-sm text-text-muted">包括申請・催し場所上空申請などの難関法務の自社完結</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="solid-card rounded-xl p-6 flex flex-col sm:flex-row gap-5 items-start">
+                    <div class="text-crimson"><i data-lucide="monitor" class="w-6 h-6"></i></div>
+                    <div>
+                        <h3 class="font-bold text-text-main mb-1.5 tracking-wide">デザイン / 自律型Web / SNS自動化</h3>
+                        <p class="text-xs text-stone-300 font-mono mb-2">Tailwind CSS, Vanilla JS, Canva, Kubario</p>
+                        <p class="text-sm text-text-muted">オフライン動作アプリ開発、一括マルチSNS自動配信</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. PROPRIETARY PIPELINE -->
+        <section class="space-y-12">
+            <div class="text-center space-y-3">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-widest uppercase text-white">Pipeline<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-text-muted text-sm tracking-wide">手作業を極限まで減らす独自のAI自動化フロー</p>
+            </div>
+            <div class="solid-card rounded-xl p-8 lg:p-12 relative overflow-hidden">
+                <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+                    <div
+                        class="flex-1 w-full flex flex-col items-center text-center p-5 bg-[#080808] rounded-xl border border-[#2e2e2e]">
+                        <div class="text-stone-200 mb-3"><i data-lucide="target" class="w-6 h-6"></i></div>
+                        <h4 class="font-bold text-sm tracking-widest mb-2 text-text-main">要件定義</h4>
+                        <p class="text-xs text-text-muted">ビジネス課題の本質抽出</p>
+                    </div>
+                    <i data-lucide="arrow-right" class="hidden lg:block text-[#444444] w-6 h-6 shrink-0"></i>
+                    <i data-lucide="arrow-down" class="block lg:hidden text-[#444444] w-5 h-5 shrink-0"></i>
+
+                    <div
+                        class="flex-1 w-full flex flex-col items-center text-center p-5 bg-[#080808] rounded-xl border border-[#2e2e2e]">
+                        <div class="text-stone-200 mb-3"><i data-lucide="terminal" class="w-6 h-6"></i></div>
+                        <h4 class="font-bold text-sm tracking-widest mb-2 text-text-main">独自プロンプト</h4>
+                        <p class="text-xs text-text-muted">最適化パラメーター設計</p>
+                    </div>
+                    <i data-lucide="arrow-right" class="hidden lg:block text-[#444444] w-6 h-6 shrink-0"></i>
+                    <i data-lucide="arrow-down" class="block lg:hidden text-[#444444] w-5 h-5 shrink-0"></i>
+
+                    <div
+                        class="flex-1 w-full flex flex-col items-center text-center p-5 bg-[#080808] rounded-xl border border-[#2e2e2e]">
+                        <div class="text-stone-200 mb-3"><i data-lucide="layers" class="w-6 h-6"></i></div>
+                        <h4 class="font-bold text-sm tracking-widest mb-2 text-text-main">多角的なデータ検証・照合</h4>
+                        <p class="text-xs text-text-muted">ハルシネーションの徹底排除</p>
+                    </div>
+                    <i data-lucide="arrow-right" class="hidden lg:block text-crimson-dark w-6 h-6 shrink-0"></i>
+                    <i data-lucide="arrow-down" class="block lg:hidden text-crimson-dark w-5 h-5 shrink-0"></i>
+
+                    <!-- Crimson Accent Box -->
+                    <div
+                        class="flex-1 w-full flex flex-col items-center text-center p-5 bg-crimson-dark/20 rounded-xl border border-crimson-dark">
+                        <div class="text-crimson mb-3"><i data-lucide="check-circle-2" class="w-6 h-6"></i></div>
+                        <h4 class="font-bold text-sm tracking-widest mb-2 text-white">実務品質での納品</h4>
+                        <p class="text-xs text-stone-300 font-light">実務に即投入できる確かな納品物</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. FEATURED WORKS -->
+        <section class="space-y-10">
+            <div class="text-center space-y-3 pt-6">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-widest uppercase text-white">Featured Works<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-text-muted text-sm tracking-wide">ビジネス課題を解決に導くソリューション実績</p>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex flex-wrap justify-center gap-3 no-print">
+                <button data-filter="all"
+                    class="filter-tab px-6 py-2 rounded-full text-xs tracking-wider transition-all border bg-crimson text-white border-crimson shadow-lg shadow-crimson/20 font-semibold">すべて表示</button>
+                <button data-filter="dx"
+                    class="filter-tab px-6 py-2 rounded-full text-xs tracking-wider transition-all border bg-[#151515] text-[#a1a1aa] border-[#2e2e2e] hover:border-[#444444]">🏢
+                    BtoB DX・業務自動化</button>
+                <button data-filter="movie"
+                    class="filter-tab px-6 py-2 rounded-full text-xs tracking-wider transition-all border bg-[#151515] text-[#a1a1aa] border-[#2e2e2e] hover:border-[#444444]">🎬
+                    AI動画・SNSディレクション</button>
+            </div>
+
+            <!-- Works Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+
+                <!-- Work 1: DX -->
+                <div class="work-card group solid-card rounded-xl flex flex-col h-full overflow-hidden"
+                    data-category="dx">
+                    <!-- Icon / Diagram placeholder instead of thumb_01.png -->
+                    <div class="h-48 relative border-b border-[#2e2e2e] bg-[#080808] flex items-center justify-center cursor-pointer transition-colors group-hover:bg-[#0a0a0a]"
+                        onclick="openModal('dx-01')">
+                        <div class="flex items-center space-x-6 text-[#444444]">
+                            <i data-lucide="file-text" class="w-8 h-8 text-stone-300"></i>
+                            <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                            <i data-lucide="cpu" class="w-8 h-8 text-stone-200"></i>
+                            <i data-lucide="arrow-right" class="w-6 h-6 text-crimson-dark"></i>
+                            <i data-lucide="file-check-2" class="w-8 h-8 text-crimson"></i>
+                        </div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="cursor-pointer flex-1" onclick="openModal('dx-01')">
+                            <div class="text-[0.65rem] font-bold text-stone-400 mb-2 uppercase tracking-[0.2em]">BtoB DX
+                            </div>
+                            <h3
+                                class="text-lg font-bold mb-3 tracking-wide text-white group-hover:text-stone-300 transition-colors">
+                                不動産新旧データAI自動監査＆動画化</h3>
+                            <p class="text-sm text-stone-300 mb-4 font-light line-clamp-2">株式会社恩送り不動産
+                                様：手動での物件データ確認をAI突合で行い工数を圧倒的に削減。</p>
+                            <div
+                                class="flex items-center text-stone-300 text-xs font-semibold tracking-wider gap-1.5 mb-6 no-print group-hover:text-crimson transition-colors">
+                                READ MORE <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
+                            </div>
+                        </div>
+                        <a href="https://youtu.be/su7G2aL9CI0" target="_blank"
+                            class="mt-auto flex items-center justify-center gap-2 bg-[#080808] hover:bg-[#151515] border border-[#2e2e2e] hover:border-crimson/50 text-white text-xs font-semibold tracking-wider py-2.5 px-4 rounded transition-colors">
+                            <i data-lucide="external-link" class="w-4 h-4 text-stone-200"></i> ビジネス解説動画を観る
+                        </a>
+
+                        <!-- PRINT ONLY DETAILS -->
+                        <div class="hidden print-only mt-4 pt-4 border-t border-gray-300 space-y-3 text-sm">
+                            <div><strong>課題:</strong> 大量の物件データ（PDF）の新旧比較作業が目視で行われ、属人的で時間を要していた。</div>
+                            <div><strong>解決策:</strong> 独自のプロンプトエンジンを用いたAI突合システムを構築。さらにVrewを活用して結果の解説を高速で動画化。</div>
+                            <div><strong>成果:</strong> 作業工数を劇的に削減。精度の向上と情報共有のスピードアップを実現。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work 2: DX PWA -->
+                <div class="work-card group solid-card rounded-xl flex flex-col h-full overflow-hidden"
+                    data-category="dx">
+                    <div class="h-48 image-container cursor-pointer transition-colors group-hover:bg-[#0a0a0a]"
+                        onclick="openModal('dx-02')">
+                        <img src="./app_flight_hud.png" alt="DIPS Flight Guard 運航管理HUD"
+                            class="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="cursor-pointer flex-1" onclick="openModal('dx-02')">
+                            <div class="text-[0.65rem] font-bold text-stone-400 mb-2 uppercase tracking-[0.2em]">Web App
+                                / PWA</div>
+                            <h3
+                                class="text-lg font-bold mb-3 tracking-wide text-white group-hover:text-stone-300 transition-colors">
+                                自律型Webアプリ開発 (最新実績)</h3>
+                            <p class="text-sm text-stone-300 mb-4 font-light line-clamp-2">『DIPS Flight Guard
+                                v5.0』及び『専勝寺夏祭りアプリ』。完全オフライン構築。</p>
+                            <div
+                                class="flex items-center text-stone-300 text-xs font-semibold tracking-wider gap-1.5 mb-6 no-print group-hover:text-crimson transition-colors">
+                                READ MORE <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
+                            </div>
+                        </div>
+
+                        <div class="hidden print-only mt-4 pt-4 border-t border-gray-300 space-y-3 text-sm">
+                            <div><strong>課題:</strong> 航空法に準拠したオフライン運用や、シニア層リテラシーへのUI対応。</div>
+                            <div><strong>解決策:</strong> 単一HTML・PWAで動作する堅牢な業務アプリを開発。CSV連携強化。</div>
+                            <div><strong>成果:</strong> 臨検時即座対応、ITリテラシー問わず現場定着率改善。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work 3: DX Houmu & Aerial (both dx and movie) -->
+                <div class="work-card group solid-card rounded-xl flex flex-col h-full overflow-hidden"
+                    data-category="dx movie">
+                    <div class="h-48 image-container cursor-pointer transition-transform duration-500"
+                        onclick="openModal('dx-03')">
+                        <i data-lucide="camera" class="w-10 h-10 fallback-icon block"></i>
+                        <img src="./sjt_06_goal_gate_hdr.jpg" alt="SJT 運営統括"
+                            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onerror="this.style.display='none'">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="cursor-pointer flex-1" onclick="openModal('dx-03')">
+                            <div class="text-[0.65rem] font-bold text-stone-400 mb-2 uppercase tracking-[0.2em]">Event
+                                Operation / Aerial Photography</div>
+                            <h3
+                                class="text-lg font-bold mb-3 tracking-wide text-white group-hover:text-stone-300 transition-colors">
+                                地方創生ツーリング SJT 運営統括・公式空撮</h3>
+                            <p class="text-sm text-stone-300 mb-4 font-light line-clamp-2">
+                                Save Japan Touring：難関ドローン法務クリア、企画・広報・空撮までの統合ディレクション実績。</p>
+                            <div
+                                class="flex items-center text-stone-300 text-xs font-semibold tracking-wider gap-1.5 mb-6 no-print group-hover:text-crimson transition-colors">
+                                READ MORE <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i></div>
+                        </div>
+
+                        <div class="hidden print-only mt-4 pt-4 border-t border-gray-300 space-y-3 text-sm">
+                            <div><strong>課題:</strong> カテゴリーIIにあたる「催し場所上空飛行」の難関国交省申請と、広報用空撮のシームレスな統合。</div>
+                            <div><strong>解決策:</strong> 独自論理による作図で申請を突破し、当日のエリア統括から空撮・広報までワンストップで実行。</div>
+                            <div><strong>成果:</strong> 大規模イベントの安全な運営進行と、魅力的な広報アセットの同時創出に成功。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work 4: Movie (YouTube 2 Channels) -->
+                <div class="work-card group solid-card rounded-xl flex flex-col h-full overflow-hidden"
+                    data-category="movie">
+                    <div class="h-48 image-container cursor-pointer transition-transform duration-500"
+                        onclick="openModal('movie-01')">
+                        <i data-lucide="film" class="w-10 h-10 fallback-icon block"></i>
+                        <img src="./thumb_youtube.jpg" alt="YouTube" class="transition-transform group-hover:scale-105"
+                            onerror="this.style.display='none'">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <div class="cursor-pointer flex-1" onclick="openModal('movie-01')">
+                            <div class="text-[0.65rem] font-bold text-stone-400 mb-2 uppercase tracking-[0.2em]">Movie
+                                Direction</div>
+                            <h3
+                                class="text-lg font-bold mb-3 tracking-wide text-white group-hover:text-stone-300 transition-colors">
+                                YouTube運用 ＆ AI動画R&D</h3>
+                            <p class="text-sm text-stone-300 mb-4 font-light line-clamp-2">
+                                『夜凪の深夜タクシー』高回転運用、『杖つき男』4Kシネマ空撮。</p>
+                            <div
+                                class="flex items-center text-stone-300 text-xs font-semibold tracking-wider gap-1.5 mb-6 no-print group-hover:text-crimson transition-colors">
+                                READ MORE <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i></div>
+                        </div>
+                        <div class="flex flex-col gap-2 mt-auto">
+                            <a href="https://www.youtube.com/@tuetukiotoko" target="_blank"
+                                class="flex items-center justify-center gap-2 bg-[#080808] hover:bg-[#151515] border border-[#2e2e2e] hover:border-crimson/50 text-white text-xs font-semibold tracking-wider py-2 px-4 rounded transition-colors">
+                                <i data-lucide="youtube"
+                                    class="w-4 h-4 text-stone-200 group-hover:text-crimson transition-colors"></i>
+                                空撮チャンネルを観る
+                            </a>
+                            <a href="https://www.youtube.com/@Nagisa_Taxi" target="_blank"
+                                class="flex items-center justify-center gap-2 bg-[#080808] hover:bg-[#151515] border border-[#2e2e2e] hover:border-crimson/50 text-white text-xs font-semibold tracking-wider py-2 px-4 rounded transition-colors">
+                                <i data-lucide="youtube"
+                                    class="w-4 h-4 text-stone-200 group-hover:text-crimson transition-colors"></i>
+                                ショート動画チャンネルを観る
+                            </a>
+                        </div>
+
+                        <div class="hidden print-only mt-4 pt-4 border-t border-gray-300 space-y-3 text-sm">
+                            <div><strong>課題:</strong> ショート動画の量産体制と実写映像の訴求力強化。</div>
+                            <div><strong>解決策:</strong> AI音声×Vrewで工数削減し、Mavic 3 Proで高品質空撮を提供。</div>
+                            <div><strong>成果:</strong> 高回転配信サイクルの確立と視覚的ブランディング成功。</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 6. Thumbnail Gallery -->
+        <section class="space-y-10 border-y border-[#2e2e2e] py-16 -mx-6 px-6 bg-[#0a0a0a] work-card"
+            data-category="movie">
+            <div class="text-center space-y-4 max-w-6xl mx-auto">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-widest uppercase text-white">Creative Gallery<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-text-main text-base tracking-wide font-medium">「視聴者のクリック率（CTR）を最大化する心理誘導デザイン」</p>
+                <p class="text-sm text-text-muted">サムネイル・バナー制作実績（AI画像生成・UI/UX最適化）</p>
+                <p class="text-xs text-stone-400 mt-2 italic font-light">※自社運営メディアにおける、視聴維持率およびCTR最大化のためのA/Bテスト検証実績です。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto pt-6">
+                <!-- Removed grayscale properties, 100% color/opacity -->
+                <div
+                    class="image-container h-44 rounded-xl border border-[#2e2e2e] group transition-all duration-500 hover:border-[#444444]">
+                    <i data-lucide="image" class="w-8 h-8 fallback-icon block"></i>
+                    <img src="./thumb_01.png" alt="日本三大「呪い」神社" class="transition duration-700 group-hover:scale-105"
+                        onerror="this.style.display='none'">
+                </div>
+                <div
+                    class="image-container h-44 rounded-xl border border-[#2e2e2e] group transition-all duration-500 hover:border-[#444444]">
+                    <i data-lucide="image" class="w-8 h-8 fallback-icon block"></i>
+                    <img src="./thumb_02.png" alt="神様を激怒させる参拝NG行動" class="transition duration-700 group-hover:scale-105"
+                        onerror="this.style.display='none'">
+                </div>
+                <div
+                    class="image-container h-44 rounded-xl border border-[#2e2e2e] group transition-all duration-500 hover:border-[#444444]">
+                    <i data-lucide="image" class="w-8 h-8 fallback-icon block"></i>
+                    <img src="./thumb_03.png" alt="強すぎるパワーを持つ神社5選" class="transition duration-700 group-hover:scale-105"
+                        onerror="this.style.display='none'">
+                </div>
+                <div
+                    class="image-container h-44 rounded-xl border border-[#2e2e2e] group transition-all duration-500 hover:border-[#444444]">
+                    <i data-lucide="image" class="w-8 h-8 fallback-icon block"></i>
+                    <img src="./thumb_cw.png" alt="時給バグマニュアル" class="transition duration-700 group-hover:scale-105"
+                        onerror="this.style.display='none'">
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. REALITIES & FACTS -->
+        <section class="space-y-12">
+            <div class="text-center space-y-3 mb-6">
+                <h2 class="text-2xl md:text-3xl font-bold tracking-widest uppercase text-white">Realities & Facts<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-text-muted text-sm tracking-wide">現場で実証された信頼性の高いパフォーマンス指標</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <!-- Fact 1 -->
+                <div class="solid-card rounded-xl p-8 space-y-4">
+                    <div
+                        class="text-2xl lg:text-3xl font-black text-white tracking-widest flex items-center justify-center gap-3">
+                        <span>4〜6日</span> <i data-lucide="arrow-right" class="w-6 h-6 text-crimson"></i>
+                        <span>30分</span>
+                    </div>
+                    <div class="text-sm font-bold text-stone-200 tracking-wide uppercase">データ突合の実測時間</div>
+                    <div class="text-sm text-stone-300 leading-loose max-w-[250px] mx-auto font-light">
+                        不動産PDF（数百件）の新旧突合・手作業目視をAI化し、所要時間を劇的に圧縮</div>
+                </div>
+                <!-- Fact 2 -->
+                <div class="solid-card rounded-xl p-8 space-y-4">
+                    <div class="text-2xl lg:text-3xl font-black text-white tracking-widest">
+                        週<span class="text-crimson">3</span>本ペース
+                    </div>
+                    <div class="text-sm font-bold text-stone-200 tracking-wide uppercase">AI動画の量産運用実績</div>
+                    <div class="text-sm text-stone-300 leading-loose max-w-[250px] mx-auto font-light">
+                        企画・台本・AI音声・編集パイプラインを1人で自走し、安定した配信サイクルを確立</div>
+                </div>
+                <!-- Fact 3 -->
+                <div class="solid-card rounded-xl p-8 space-y-4">
+                    <div class="text-2xl lg:text-3xl font-black text-white tracking-widest">
+                        <span class="text-crimson">20</span>時間毎
+                    </div>
+                    <div class="text-sm font-bold text-stone-200 tracking-wide uppercase">現場法務・点検の自動管理</div>
+                    <div class="text-sm text-stone-300 leading-loose max-w-[250px] mx-auto font-light">『DIPS Flight
+                        Guard』による法定整備サイクル・飛行日誌（様式1〜3）の自動連動</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. WORKING CONDITIONS -->
+        <section class="solid-card rounded-xl p-8 lg:p-12 border-t-2 border-t-[#2e2e2e]">
+            <div class="mb-8">
+                <h3 class="text-xl font-bold text-white tracking-widest uppercase flex items-center gap-3"><i
+                        data-lucide="briefcase" class="w-5 h-5 text-stone-200"></i> Working Conditions</h3>
+                <p class="text-sm text-text-muted mt-2 tracking-wide pl-8">希望稼働条件・スタンス</p>
+            </div>
+
+            <div class="space-y-6 text-stone-300 text-sm font-light pl-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pb-4 border-b border-[#2e2e2e]">
+                    <div class="flex items-center gap-3 font-semibold text-white uppercase tracking-widest text-xs">
+                        <strong>勤務形態</strong>
+                    </div>
+                    <div class="md:col-span-3">完全フルリモート（在宅デスクワーク主体）</div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pb-4 border-b border-[#2e2e2e]">
+                    <div class="flex items-center gap-3 font-semibold text-white uppercase tracking-widest text-xs">
+                        <strong>稼働量</strong>
+                    </div>
+                    <div class="md:col-span-3">週20〜30時間程度（柔軟なシフト・納期対応可能）</div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pb-4 border-b border-[#2e2e2e]">
+                    <div class="flex items-center gap-3 font-semibold text-white uppercase tracking-widest text-xs">
+                        <strong>契約形態</strong>
+                    </div>
+                    <div class="md:col-span-3 flex flex-wrap gap-2">
+                        <span
+                            class="bg-[#080808] px-3 py-1.5 rounded-md border border-[#2e2e2e] text-xs tracking-wide">業務委託</span>
+                        <span
+                            class="bg-[#080808] px-3 py-1.5 rounded-md border border-[#2e2e2e] text-xs tracking-wide">外部AI推進室（月額顧問）</span>
+                        <span
+                            class="bg-[#080808] px-3 py-1.5 rounded-md border border-[#2e2e2e] text-xs tracking-wide">フルリモート正社員・準委任</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div
+                        class="flex items-start gap-3 pt-1 font-semibold text-crimson uppercase tracking-widest text-xs">
+                        <strong>スタンス</strong>
+                    </div>
+                    <div class="md:col-span-3 italic leading-loose text-white text-base">
+                        「作業時間の切り売りではなく、AIを活用して制作リードタイムを極限まで短縮する<strong
+                            class="text-crimson font-bold">アウトプットベース</strong>で貢献します」
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 9. CONTACT -->
+        <section class="py-12 text-center space-y-8 relative overflow-hidden">
+            <div class="relative z-10 space-y-6">
+                <h2 class="text-3xl lg:text-4xl font-bold tracking-widest uppercase text-white">Let's Accelerate<span
+                        class="text-crimson">.</span></h2>
+                <p class="text-base text-stone-300 font-light italic max-w-2xl mx-auto leading-relaxed">
+                    「ビジネスを加速させるための『最も合理的な選択』です」
+                </p>
+                <div class="pt-6 no-print flex justify-center relative">
+                    <a href="mailto:t508697231@gmail.com" id="copy-email"
+                        class="group flex items-center justify-center gap-4 bg-[#151515] text-text-main border border-[#2e2e2e] hover:border-crimson rounded-md px-8 py-4 font-mono text-sm tracking-widest transition-colors shadow-2xl w-full max-w-sm">
+                        <i data-lucide="mail"
+                            class="w-4 h-4 text-stone-300 group-hover:text-crimson transition-colors"></i>
+                        <span>t508697231@gmail.com</span>
+                        <i data-lucide="copy"
+                            class="w-4 h-4 text-stone-400 group-hover:text-text-main transition-colors"></i>
+                    </a>
+                    <div id="copy-toast"
+                        class="absolute -top-10 left-1/2 -translate-x-1/2 bg-crimson-dark text-white text-xs tracking-widest uppercase px-4 py-2 rounded shadow-lg transform transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+                        Copied
+                    </div>
+                </div>
+
+                <!-- Print Fallback Email -->
+                <div
+                    class="hidden print-only mt-8 text-sm font-mono bg-gray-100 p-4 border border-[#2e2e2e] rounded text-center text-black">
+                    Contact: t508697231@gmail.com
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer
+        class="border-t border-[#151515] bg-[#050505] py-8 text-center text-[#71717a] text-xs font-mono tracking-widest uppercase no-print">
+        <p>&copy; 2026 SANO AI-Studio.</p>
+    </footer>
+
+    <!-- MODAL (Popup) - Hidden on Print -->
+    <div id="work-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 no-print">
+        <div id="modal-bg"
+            class="absolute inset-0 bg-[#000000]/90 backdrop-blur-sm opacity-0 transition-opacity duration-300 cursor-pointer">
+        </div>
+        <div id="modal-content-container"
+            class="relative bg-[#080808] border border-[#2e2e2e] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl scale-95 opacity-0 transition-all duration-300 transform">
+            <button id="modal-close"
+                class="absolute top-5 right-5 text-stone-300 hover:text-white bg-[#151515] hover:bg-[#2e2e2e] p-2 rounded-full transition-colors z-10 focus:outline-none border border-[#151515] hover:border-[#444444]">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="p-8 border-b border-[#151515] bg-[#050505]">
+                <div class="text-stone-400 text-xs tracking-[0.2em] font-medium uppercase mb-3" id="modal-client">Client
+                    Name</div>
+                <h2 class="text-2xl font-bold text-white leading-tight mb-5 tracking-wide" id="modal-title">Project
+                    Title</h2>
+                <div id="modal-links" class="flex flex-wrap gap-3"></div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-8 space-y-10 bg-[#080808]">
+                <div class="space-y-4">
+                    <div
+                        class="flex items-center gap-3 text-white font-bold border-b border-[#151515] pb-3 tracking-widest uppercase text-sm">
+                        <i data-lucide="crosshairs" class="w-4 h-4 text-stone-300"></i>
+                        <h3>課題 <span class="text-[10px] text-stone-400 font-medium ml-2">Background</span></h3>
+                    </div>
+                    <p class="text-stone-300 text-sm leading-relaxed font-light" id="modal-bg-text"></p>
+                </div>
+                <div class="space-y-4">
+                    <div
+                        class="flex items-center gap-3 text-white font-bold border-b border-[#151515] pb-3 tracking-widest uppercase text-sm">
+                        <i data-lucide="cpu" class="w-4 h-4 text-stone-300"></i>
+                        <h3>解決策 <span class="text-[10px] text-stone-400 font-medium ml-2">Apporach</span></h3>
+                    </div>
+                    <p class="text-stone-300 text-sm leading-relaxed font-light" id="modal-sol-text"></p>
+                </div>
+                <div class="space-y-4">
+                    <div
+                        class="flex items-center gap-3 text-white font-bold border-b border-[#151515] pb-3 tracking-widest uppercase text-sm">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-crimson"></i>
+                        <h3>成果 <span class="text-[10px] text-stone-400 font-medium ml-2">Result</span></h3>
+                    </div>
+                    <p class="text-white text-sm leading-loose font-medium bg-[#151515] border border-[#2e2e2e] p-5 rounded-lg"
+                        id="modal-res-text"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        lucide.createIcons();
+
+        const worksData = {
+            'dx-01': {
+                title: 'BtoB DX / 不動産新旧データAI自動監査＆動画化',
+                client: '株式会社恩送り不動産 様',
+                background: '大量の物件データ（PDF）の新旧比較作業が目視で行われており、極めて属人的で膨大な時間がかかっていた。ヒューマンエラーによる見落としリスクも潜在していた。',
+                solution: '独自のプロンプトエンジンを用いたAI突合システムを構築。さらにVrewを活用して監査結果の解説を高速で動画化し、共有プロセスへのストレスをゼロにした。',
+                result: '作業工数を劇的に削減（4〜6日かかっていた作業を30分に短縮）。精度の向上と、社内・クライアント情報共有の爆速化を実現。',
+                links: [{ url: 'https://youtu.be/su7G2aL9CI0', text: 'ビジネス解説動画を観る', icon: 'external-link' }]
+            },
+            'dx-02': {
+                title: '自律型Webアプリ開発（PWA・シニアUI最適化）',
+                client: 'DIPS Flight Guard v5.0 / 専勝寺 様',
+                background: '航空法に準拠したオフラインでの運航管理ツールや、ITリテラシーが高くないシニア層でも現場で直感的に使えるシステムが求められていた。外部通信に依存しない強固な要件。',
+                solution: `完全オフライン動作するPWA（DIPS Flight Guard）を開発。また、単一の自立型 index.html のみで動作し、CSV高速エクスポートを備えたシニアUI最適化アプリを提供。
+                <div class="mt-4 rounded-lg overflow-hidden border border-[#2e2e2e] bg-[#080808]">
+                    <img src="./app_offline_senior_ui.png" alt="専勝寺夏祭りアプリ シニアUI最適化" class="w-full object-cover">
+                </div>
+                <p class="text-[11px] text-stone-400 mt-1.5 font-light">▲ 専勝寺夏祭りアプリ：完全オフライン動作とシニア向け安心保存UI</p>`,
+                result: '臨検時も即座に対応可能なシールドUIにより監査対応を100%成功。ITリテラシーを問わず現場定着率が大幅に改善し、継続利用を実現。',
+                links: []
+            },
+            'dx-03': {
+                title: '地方創生ツーリング SJT 運営統括・広報・公式空撮',
+                client: 'Save Japan Touring 2026',
+                background: '地方創生を目的とした大規模ツーリングイベントにおいて、全体の進行管理、安全かつ効果的な広報、そしてカテゴリーIIにおける難関ドローン空撮のシームレスな統合が求められた。',
+                solution: '独自の作図スクリプトを用いた「催し場所上空飛行」の国交省申請突破を皮切りに、イベント当日のエリア統括と公式広報素材の撮影をワンストップで完遂。',
+                result: `国交省DIPS2.0の難関申請を完全自力で突破。企画から当日の運営統括、そして空撮記録までを一気通貫で完遂し、地域の魅力を最大限に発信する広報アセットを創出した。
+                <div class="columns-2 sm:columns-3 gap-3 mt-6">
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_01_venue_morning.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_01_venue_morning.jpg" alt="SJT2025 午前会場・準備" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">午前会場・準備</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_02_safety_parade.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_02_safety_parade.jpg" alt="地域連携・安全啓発パレードの様子" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">地域連携・安全パレード</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_03_riders_gathering.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_03_riders_gathering.jpg" alt="ライダー集結" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">ライダー集結</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_04_event_stage.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_04_event_stage.jpg" alt="イベントステージ" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">イベントステージ</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_05_goal_portrait.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_05_goal_portrait.jpg" alt="SJT ゴールゲート（縦構図）" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">ゴールゲート (縦構図)</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_06_goal_gate_hdr.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_06_goal_gate_hdr.jpg" alt="SJT2025 ゴールゲートと協賛各社ボード全景" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">ゴールゲート全景 (HDR)</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_07_sponsors_board.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_07_sponsors_board.jpg" alt="SJT2025 協賛各社ロゴボード" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">協賛各社ロゴボード</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_08_riders_goal.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_08_riders_goal.jpg" alt="ライダーフィニッシュ" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">ライダーフィニッシュ</div>
+                        </a>
+                    </div>
+                    <div class="break-inside-avoid mb-3 rounded overflow-hidden border border-[#2e2e2e] bg-[#080808] group relative shadow-2xl">
+                        <a href="./sjt_09_goal_ceremony.jpg" target="_blank" class="block cursor-zoom-in">
+                            <img src="./sjt_09_goal_ceremony.jpg" alt="ゴールセレモニー" class="w-full h-auto transition duration-500 group-hover:scale-105">
+                            <div class="absolute bottom-0 w-full bg-black/80 text-[10px] text-stone-200 p-1.5 text-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">ゴールセレモニー</div>
+                        </a>
+                    </div>
+                </div>`,
+                links: []
+            },
+            'movie-01': {
+                title: 'YouTube運用 ＆ AI動画R&D',
+                client: '夜凪の深夜タクシー / 杖つき男',
+                background: 'プラットフォームアルゴリズムに適応するための短尺（ショート）動画の量産体制構築と、実写シネマティック映像による訴求力強化が課題。',
+                solution: 'Voicepeak（AI音声）× Vrewによるワークフローを開発し、属人性を排除したショート動画の量産体制を確立。さらにDJI Mavic 3 Proを活用した4Kシネマティック空撮を導入。',
+                result: '高回転でのコンテンツ配信サイクル（週3回）を実現し、視聴維持率を大幅に向上。視覚的な没入感を極限まで高めブランド価値を創出。',
+                links: [
+                    { url: 'https://www.youtube.com/@tuetukiotoko', text: '空撮チャンネル', icon: 'youtube', color: 'text-stone-300 group-hover:text-red-500' },
+                    { url: 'https://www.youtube.com/@Nagisa_Taxi', text: 'ショート動画チャンネル', icon: 'youtube', color: 'text-stone-300 group-hover:text-red-500' }
+                ]
+            }
+        };
+
+        const modal = document.getElementById('work-modal');
+        const modalBg = document.getElementById('modal-bg');
+        const modalContent = document.getElementById('modal-content-container');
+
+        window.openModal = function (id) {
+            const data = worksData[id];
+            if (!data) return;
+
+            document.getElementById('modal-title').textContent = data.title;
+            document.getElementById('modal-client').textContent = data.client;
+            document.getElementById('modal-bg-text').innerHTML = data.background;
+            document.getElementById('modal-sol-text').innerHTML = data.solution;
+            document.getElementById('modal-res-text').innerHTML = data.result;
+
+            const linksContainer = document.getElementById('modal-links');
+            linksContainer.innerHTML = '';
+            if (data.links && data.links.length > 0) {
+                data.links.forEach(l => {
+                    linksContainer.innerHTML += `<a href="${l.url}" target="_blank" class="group flex items-center gap-2 bg-[#151515] hover:bg-[#1a1a1a] text-stone-300 hover:text-white text-xs tracking-wider py-2 px-4 rounded-md border border-[#2e2e2e] hover:border-[#444444] transition-colors">
+                        <i data-lucide="${l.icon}" class="w-3.5 h-3.5 ${l.color || ''} transition-colors"></i> ${l.text}
+                    </a>`;
+                });
+                lucide.createIcons();
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            requestAnimationFrame(() => {
+                modalBg.classList.remove('opacity-0');
+                modalBg.classList.add('opacity-100');
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            });
+            document.body.style.overflow = 'hidden';
+        };
+
+        function closeModal() {
+            modalBg.classList.remove('opacity-100');
+            modalBg.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        modalBg.addEventListener('click', closeModal);
+
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        const workCards = document.querySelectorAll('.work-card');
+
+        function applyFilter(category) {
+            filterTabs.forEach(tab => {
+                if (tab.dataset.filter === category || (category === 'all' && tab.dataset.filter === 'all')) {
+                    tab.className = "filter-tab px-6 py-2 rounded-full text-xs tracking-wider transition-all border bg-crimson text-white border-crimson shadow-lg shadow-crimson/20 font-semibold";
+                } else {
+                    tab.className = "filter-tab px-6 py-2 rounded-full text-xs tracking-wider transition-all border bg-[#151515] text-[#a1a1aa] border-[#2e2e2e] hover:border-[#444444]";
+                }
+            });
+
+            workCards.forEach(card => {
+                if (category === 'all' || card.dataset.category === category || card.dataset.category.includes(category)) {
+                    card.style.display = category.includes('gallery') ? 'block' : 'flex';
+                    if (card.tagName.toLowerCase() === 'section') card.style.display = 'block';
+
+                    requestAnimationFrame(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'scale(1)';
+                    });
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        if (card.style.opacity === '0') {
+                            card.style.display = 'none';
+                        }
+                    }, 300);
+                }
+            });
+        }
+
+        function checkHashAndFilter() {
+            const hash = window.location.hash.replace('#', '');
+            if (['dx', 'movie'].includes(hash)) {
+                applyFilter(hash);
+            } else {
+                applyFilter('all');
+            }
+        }
+
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const cat = tab.dataset.filter;
+                if (cat !== 'all') {
+                    history.replaceState(null, null, '#' + cat);
+                } else {
+                    history.replaceState(null, null, ' ');
+                }
+                applyFilter(cat);
+            });
+        });
+
+        window.addEventListener('load', checkHashAndFilter);
+        window.addEventListener('hashchange', checkHashAndFilter);
+
+        document.getElementById('copy-email').addEventListener('click', () => {
+            navigator.clipboard.writeText('t508697231@gmail.com').then(() => {
+                const toast = document.getElementById('copy-toast');
+                toast.classList.remove('translate-y-4', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-4', 'opacity-0');
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+
+</html>
