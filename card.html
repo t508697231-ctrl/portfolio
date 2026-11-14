@@ -1088,58 +1088,74 @@
         });
       });
 
+      var gpsWatchId = null;
+      var gpsStopTimer = null;
       if (locateBtn) {
         locateBtn.addEventListener('click', function () {
           if (!navigator.geolocation) {
             showToast('この端末・ブラウザは位置情報に未対応です');
             return;
           }
-          showToast('現在地を取得中...');
-          function applyPos(pos, label) {
-            currentLat = pos.coords.latitude;
-            currentLng = pos.coords.longitude;
-            currentLocName = label;
-            centerRelX = 0.5;
-            centerRelY = 0.5;
-            gsiTileCache = {};
-            drawOfflineDipsMap();
-            if (mapStatusText) mapStatusText.textContent = label + '（精度約' + Math.round(pos.coords.accuracy || 0) + 'm）';
+          if (gpsWatchId !== null) {
+            navigator.geolocation.clearWatch(gpsWatchId);
+            gpsWatchId = null;
           }
-          // Step 1: Fast indoor Wi-Fi/Cell/Cached fix so it never stalls indoors
-          navigator.geolocation.getCurrentPosition(
+          clearTimeout(gpsStopTimer);
+          showToast('高精度GPS衛星で現在地を測位中...');
+          if (mapStatusText) mapStatusText.textContent = '高精度GPS測位中...';
+
+          var bestAcc = Infinity;
+          function applyPos(pos) {
+            var acc = pos.coords.accuracy || 9999;
+            if (acc <= bestAcc) {
+              bestAcc = acc;
+              currentLat = pos.coords.latitude;
+              currentLng = pos.coords.longitude;
+              currentLocName = '現在地GPS';
+              centerRelX = 0.5;
+              centerRelY = 0.5;
+              gsiTileCache = {};
+              drawOfflineDipsMap();
+              if (mapStatusText) {
+                mapStatusText.textContent = '現在地GPS反映済（精度 約' + Math.round(acc) + 'm）';
+              }
+            }
+          }
+
+          // Pure high-accuracy GPS (matching Flight Guard + watchPosition refinement)
+          gpsWatchId = navigator.geolocation.watchPosition(
             function (pos) {
-              applyPos(pos, '現在地で作図');
-              showToast('現在地へ移動しました');
-              // Step 2: Refine with high-accuracy GPS in background
-              navigator.geolocation.getCurrentPosition(
-                function (hiPos) { applyPos(hiPos, '現在地GPS（高精度）'); },
-                function () {},
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-              );
-            },
-            function (err) {
-              // Fallback: retry high-accuracy once if fast fix failed, otherwise report exact reason
-              if (err && err.code === 1) {
-                showToast('位置情報の許可が拒否されています（コード1）');
-              } else {
-                navigator.geolocation.getCurrentPosition(
-                  function (pos2) {
-                    applyPos(pos2, '現在地GPS');
-                    showToast('現在地へ移動しました');
-                  },
-                  function (err2) {
-                    var msg = err2 && err2.code === 1 ? '位置情報の許可が必要です' : (err2 && err2.code === 3 ? '測位タイムアウト（電波環境を確認）' : '現在地を取得できませんでした');
-                    showToast(msg);
-                  },
-                  { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-                );
+              applyPos(pos);
+              if (pos.coords.accuracy && pos.coords.accuracy <= 35) {
+                navigator.geolocation.clearWatch(gpsWatchId);
+                gpsWatchId = null;
+                clearTimeout(gpsStopTimer);
+                showToast('高精度GPSで現在地を確定しました（精度 約' + Math.round(pos.coords.accuracy) + 'm）');
               }
             },
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+            function (err) {
+              navigator.geolocation.clearWatch(gpsWatchId);
+              gpsWatchId = null;
+              clearTimeout(gpsStopTimer);
+              var msg = (err && err.code === 1)
+                ? '位置情報の許可が拒否されています（コード1）'
+                : ((err && err.code === 3) ? 'GPS測位タイムアウト（窓際等でお試しください）' : '現在地を取得できませんでした');
+              showToast(msg);
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
           );
+
+          gpsStopTimer = setTimeout(function () {
+            if (gpsWatchId !== null) {
+              navigator.geolocation.clearWatch(gpsWatchId);
+              gpsWatchId = null;
+              if (bestAcc < Infinity) {
+                showToast('現在地を更新しました（精度 約' + Math.round(bestAcc) + 'm）');
+              }
+            }
+          }, 10000);
         });
       }
-
       var needPills = document.querySelectorAll('.need-pill');
       var needItems = document.querySelectorAll('.need-item');
       needPills.forEach(function (pill) {
