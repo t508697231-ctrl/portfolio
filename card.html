@@ -120,6 +120,20 @@
     .leading-tight { line-height: 1.25; }
     .leading-relaxed { line-height: 1.625; }
     .tracking-tight { letter-spacing: -0.025em; }
+    .whitespace-nowrap { white-space: nowrap; }
+    .alt-btn, .need-pill { color: rgba(255, 255, 255, 0.92); }
+    body.otherworld .alt-btn:not(.active),
+    body.otherworld .need-pill:not(.active) {
+      color: #e7e5e4 !important;
+      background-color: rgba(15, 10, 8, 0.55) !important;
+      border-color: rgba(180, 83, 9, 0.55) !important;
+    }
+    body.otherworld .alt-btn.active,
+    body.otherworld .need-pill.active {
+      color: #fef2f2 !important;
+      background-color: rgba(127, 29, 29, 0.55) !important;
+      border-color: #b91c1c !important;
+    }
     .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .overflow-hidden { overflow: hidden; }
     .object-cover { object-fit: cover; }
@@ -172,7 +186,7 @@
       text-shadow: 0 0 6px rgba(153, 27, 27, 0.95), 0 2px 3px rgba(0, 0, 0, 0.95) !important;
     }
     .t-block {
-      color: #450a0a !important;
+      color: #b91c1c !important;
       text-shadow: 0 0 3px rgba(127, 29, 29, 0.8) !important;
       font-size: 0.9em;
     }
@@ -501,7 +515,7 @@
           <span class="text-[10px] font-black tracking-widest accent-2 uppercase">REAL GSI MAP</span>
           <h2 class="text-sm font-black text-white">DIPSコックピット（国土地理院・現在地）</h2>
         </div>
-        <button id="locateBtn" type="button" class="px-3 py-1.5 rounded-lg btn-glass-accent text-[11px] font-black active:scale-95">
+        <button id="locateBtn" type="button" class="px-3 py-1.5 rounded-lg btn-glass-accent text-[11px] font-black active:scale-95 whitespace-nowrap shrink-0">
           <span>📍 現在地で作図</span>
         </button>
       </div>
@@ -918,8 +932,8 @@
       var layerPhotoBtn = document.getElementById('layerPhotoBtn');
       var locateBtn = document.getElementById('locateBtn');
 
-      var currentLat = 35.2273, currentLng = 138.6213, currentAlt = 19.9, currentZone = 30, currentInt = 19;
-      var currentLocName = '静岡県富士宮市';
+      var currentLat = 35.2258, currentLng = 138.5954, currentAlt = 19.9, currentZone = 30, currentInt = 19;
+      var currentLocName = '静岡県富士宮市大中里';
       var mapLayerMode = 'std';
       var centerRelX = 0.5, centerRelY = 0.52;
       var gsiTileCache = {};
@@ -1092,7 +1106,7 @@
               showToast('現在地で作図を更新しました');
             },
             function () {
-              showToast('位置情報が許可されていないため富士宮基準を表示中です');
+              showToast('スマホの位置情報許可がOFFのため大中里基準を表示中です');
             },
             { enableHighAccuracy: true, timeout: 6000 }
           );
