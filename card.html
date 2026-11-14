@@ -935,7 +935,7 @@
       var currentLat = 35.2258, currentLng = 138.5954, currentAlt = 19.9, currentZone = 30, currentInt = 19;
       var currentLocName = '静岡県富士宮市大中里';
       var mapLayerMode = 'std';
-      var centerRelX = 0.5, centerRelY = 0.52;
+      var centerRelX = 0.5, centerRelY = 0.5;
       var gsiTileCache = {};
 
       function latLngToTile(lat, lng, z) {
@@ -1091,24 +1091,51 @@
       if (locateBtn) {
         locateBtn.addEventListener('click', function () {
           if (!navigator.geolocation) {
-            showToast('現在地GPSに未対応の端末です');
+            showToast('この端末・ブラウザは位置情報に未対応です');
             return;
           }
           showToast('現在地を取得中...');
+          function applyPos(pos, label) {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            currentLocName = label;
+            centerRelX = 0.5;
+            centerRelY = 0.5;
+            gsiTileCache = {};
+            drawOfflineDipsMap();
+            if (mapStatusText) mapStatusText.textContent = label + '（精度約' + Math.round(pos.coords.accuracy || 0) + 'm）';
+          }
+          // Step 1: Fast indoor Wi-Fi/Cell/Cached fix so it never stalls indoors
           navigator.geolocation.getCurrentPosition(
             function (pos) {
-              currentLat = pos.coords.latitude;
-              currentLng = pos.coords.longitude;
-              currentLocName = '現在地GPS作図';
-              centerRelX = 0.5; centerRelY = 0.52;
-              drawOfflineDipsMap();
-              if (mapStatusText) mapStatusText.textContent = '現在地GPSを中心に作図しました';
-              showToast('現在地で作図を更新しました');
+              applyPos(pos, '現在地で作図');
+              showToast('現在地へ移動しました');
+              // Step 2: Refine with high-accuracy GPS in background
+              navigator.geolocation.getCurrentPosition(
+                function (hiPos) { applyPos(hiPos, '現在地GPS（高精度）'); },
+                function () {},
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+              );
             },
-            function () {
-              showToast('スマホの位置情報許可がOFFのため大中里基準を表示中です');
+            function (err) {
+              // Fallback: retry high-accuracy once if fast fix failed, otherwise report exact reason
+              if (err && err.code === 1) {
+                showToast('位置情報の許可が拒否されています（コード1）');
+              } else {
+                navigator.geolocation.getCurrentPosition(
+                  function (pos2) {
+                    applyPos(pos2, '現在地GPS');
+                    showToast('現在地へ移動しました');
+                  },
+                  function (err2) {
+                    var msg = err2 && err2.code === 1 ? '位置情報の許可が必要です' : (err2 && err2.code === 3 ? '測位タイムアウト（電波環境を確認）' : '現在地を取得できませんでした');
+                    showToast(msg);
+                  },
+                  { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+                );
+              }
             },
-            { enableHighAccuracy: true, timeout: 6000 }
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
           );
         });
       }
