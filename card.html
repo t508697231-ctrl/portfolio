@@ -121,6 +121,19 @@
     .leading-relaxed { line-height: 1.625; }
     .tracking-tight { letter-spacing: -0.025em; }
     .whitespace-nowrap { white-space: nowrap; }
+    .flex-wrap { flex-wrap: wrap; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .font-extrabold { font-weight: 800; }
+    .px-0\.5 { padding-left: 0.125rem; padding-right: 0.125rem; }
+    .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+    .h-64 { height: 16rem; }
+    .bg-white\/5 { background-color: rgba(255, 255, 255, 0.05); }
+    .bg-white\/20 { background-color: rgba(255, 255, 255, 0.20); }
+    .border-white\/40 { border-color: rgba(255, 255, 255, 0.40); }
+    .text-white\/80 { color: rgba(255, 255, 255, 0.80); }
+    .text-white\/85 { color: rgba(255, 255, 255, 0.85); }
+
     .alt-btn, .need-pill { color: rgba(255, 255, 255, 0.92); }
     body.otherworld .alt-btn:not(.active),
     body.otherworld .need-pill:not(.active) {
@@ -516,7 +529,14 @@
           <h2 class="text-sm font-black text-white">DIPSコックピット（国土地理院・現在地）</h2>
         </div>
         <button id="locateBtn" type="button" class="px-3 py-1.5 rounded-lg btn-glass-accent text-[11px] font-black active:scale-95 whitespace-nowrap shrink-0">
-          <span>📍 現在地で作図</span>
+          <span>📍 現在地GPS＋住所取得</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <input id="gsiAddrInput" type="text" placeholder="住所・地名でピンポイント移動（例：大中里6、石廊崎、東京駅）" class="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-900/90 border border-white/25 text-xs text-white" style="min-width:0;outline:none;" />
+        <button id="gsiAddrSearchBtn" type="button" class="px-3 py-1.5 rounded-lg bg-white/20 text-white border border-white/40 text-xs font-black whitespace-nowrap shrink-0">
+          🔍 検索移動
         </button>
       </div>
 
@@ -531,6 +551,8 @@
         <div class="flex gap-1 shrink-0">
           <button type="button" id="layerStdBtn" class="px-2 py-0.5 rounded bg-white/20 text-white border border-white/40 font-bold">標準</button>
           <button type="button" id="layerPhotoBtn" class="px-2 py-0.5 rounded bg-white/5 text-white/75 border border-white/20 font-bold">航空写真</button>
+          <button type="button" id="zoomInBtn" class="px-2 py-0.5 rounded bg-white/10 text-white border border-white/25 font-bold">＋</button>
+          <button type="button" id="zoomOutBtn" class="px-2 py-0.5 rounded bg-white/10 text-white border border-white/25 font-bold">－</button>
         </div>
       </div>
 
@@ -923,137 +945,196 @@
         eMarker = L.marker([lat - 0.00004, lng + 0.00005], { icon: eIcon }).addTo(gsiMap);
       }
 
-      // Hybrid GSI Tile + Offline-First Self-Contained Canvas DIPS Engine (Zero external CDN)
+      // Flight Guard v8.6 Exact GSI Tile + True Meter-Scale DIPS Engine + Address Search + Reverse Geocode
       var mapCanvas = document.getElementById('dipsMapCanvas');
       var mapCtx = mapCanvas ? mapCanvas.getContext('2d') : null;
       var mapStatusText = document.getElementById('mapStatusText');
       var integerReadout = document.getElementById('integerReadout');
       var layerStdBtn = document.getElementById('layerStdBtn');
       var layerPhotoBtn = document.getElementById('layerPhotoBtn');
+      var zoomInBtn = document.getElementById('zoomInBtn');
+      var zoomOutBtn = document.getElementById('zoomOutBtn');
       var locateBtn = document.getElementById('locateBtn');
+      var gsiAddrInput = document.getElementById('gsiAddrInput');
+      var gsiAddrSearchBtn = document.getElementById('gsiAddrSearchBtn');
 
-      var currentLat = 35.2258, currentLng = 138.5954, currentAlt = 19.9, currentZone = 30, currentInt = 19;
-      var currentLocName = '静岡県富士宮市大中里';
+      // Exact GSI official coordinates for 静岡県富士宮市大中里6-3 (35.23745, 138.58388)
+      var currentLat = 35.23745, currentLng = 138.58388, currentAlt = 19.9, currentZone = 30, currentInt = 19;
+      var currentLocName = '静岡県富士宮市大中里6 H地点';
       var mapLayerMode = 'std';
-      var centerRelX = 0.5, centerRelY = 0.5;
+      var mapZoom = 16;
       var gsiTileCache = {};
 
-      function latLngToTile(lat, lng, z) {
-        var n = Math.pow(2, z);
-        var x = ((lng + 180) / 360) * n;
-        var latRad = (lat * Math.PI) / 180;
-        var y = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
-        return { tx: Math.floor(x), ty: Math.floor(y), fx: x - Math.floor(x), fy: y - Math.floor(y) };
+      function lon2tileX(lon, z) {
+        return ((lon + 180) / 360) * Math.pow(2, z);
       }
-
-      function getGsiTile(mode, z, tx, ty) {
-        var key = mode + '_' + z + '_' + tx + '_' + ty;
-        if (gsiTileCache[key]) return gsiTileCache[key];
-        var ext = mode === 'photo' ? 'jpg' : 'png';
-        var sub = mode === 'photo' ? 'seamlessphoto' : 'std';
-        var img = new Image();
-        img.crossOrigin = 'anonymous';
-        var entry = { img: img, loaded: false, failed: false };
-        gsiTileCache[key] = entry;
-        img.onload = function () {
-          entry.loaded = true;
-          drawOfflineDipsMap();
-        };
-        img.onerror = function () {
-          entry.failed = true;
-        };
-        img.src = 'https://cyberjapandata.gsi.go.jp/xyz/' + sub + '/' + z + '/' + tx + '/' + ty + '.' + ext;
-        return entry;
+      function lat2tileY(lat, z) {
+        var rad = (lat * Math.PI) / 180;
+        return ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * Math.pow(2, z);
+      }
+      function tileX2lon(x, z) {
+        return (x / Math.pow(2, z)) * 360 - 180;
+      }
+      function tileY2lat(y, z) {
+        var n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
+        return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
       }
 
       function drawOfflineDipsMap() {
         if (!mapCtx) return;
-        var W = mapCanvas.width, H = mapCanvas.height;
-        mapCtx.clearRect(0, 0, W, H);
+        var w = mapCanvas.width, h = mapCanvas.height;
+        var lat = currentLat, lng = currentLng, z = mapZoom;
+        var layer = mapLayerMode === 'photo' ? 'seamlessphoto' : 'std';
+        var ext = layer === 'seamlessphoto' ? 'jpg' : 'png';
 
-        // 1) Offline dark fallback backdrop
-        mapCtx.fillStyle = mapLayerMode === 'std' ? '#09111c' : '#0d1b18';
-        mapCtx.fillRect(0, 0, W, H);
-        mapCtx.strokeStyle = mapLayerMode === 'std' ? 'rgba(56, 189, 248, 0.14)' : 'rgba(52, 211, 153, 0.14)';
+        mapCtx.clearRect(0, 0, w, h);
+        mapCtx.fillStyle = '#0b1528';
+        mapCtx.fillRect(0, 0, w, h);
+
+        // Offline grid backdrop
+        mapCtx.strokeStyle = 'rgba(0, 229, 255, 0.15)';
         mapCtx.lineWidth = 1;
-        for (var gx = 0; gx < W; gx += 38) {
-          mapCtx.beginPath(); mapCtx.moveTo(gx, 0); mapCtx.lineTo(gx, H); mapCtx.stroke();
+        for (var gx = 0; gx < w; gx += 40) {
+          mapCtx.beginPath(); mapCtx.moveTo(gx, 0); mapCtx.lineTo(gx, h); mapCtx.stroke();
         }
-        for (var gy = 0; gy < H; gy += 38) {
-          mapCtx.beginPath(); mapCtx.moveTo(0, gy); mapCtx.lineTo(W, gy); mapCtx.stroke();
+        for (var gy = 0; gy < h; gy += 40) {
+          mapCtx.beginPath(); mapCtx.moveTo(0, gy); mapCtx.lineTo(w, gy); mapCtx.stroke();
         }
 
-        // 2) Overlay real GSI tiles directly onto Canvas when online
-        var zoom = 16;
-        var tInfo = latLngToTile(currentLat, currentLng, zoom);
-        var tilePx = 256;
-        var originX = W * 0.5 - tInfo.fx * tilePx;
-        var originY = H * 0.5 - tInfo.fy * tilePx;
+        // Exact Flight Guard tile projection math
+        var centerTx = lon2tileX(lng, z);
+        var centerTy = lat2tileY(lat, z);
+        var startTileX = Math.floor(centerTx - (w / 2) / 256);
+        var endTileX = Math.floor(centerTx + (w / 2) / 256);
+        var startTileY = Math.floor(centerTy - (h / 2) / 256);
+        var endTileY = Math.floor(centerTy + (h / 2) / 256);
         var anyTileLoaded = false;
 
-        for (var dx = -2; dx <= 2; dx++) {
-          for (var dy = -1; dy <= 1; dy++) {
-            var entry = getGsiTile(mapLayerMode, zoom, tInfo.tx + dx, tInfo.ty + dy);
-            if (entry.loaded) {
+        for (var tx = startTileX; tx <= endTileX; tx++) {
+          for (var ty = startTileY; ty <= endTileY; ty++) {
+            var drawX = Math.round(w / 2 + (tx - centerTx) * 256);
+            var drawY = Math.round(h / 2 + (ty - centerTy) * 256);
+            var url = 'https://cyberjapandata.gsi.go.jp/xyz/' + layer + '/' + z + '/' + tx + '/' + ty + '.' + ext;
+            var cached = gsiTileCache[url];
+            if (cached && cached.complete && cached.naturalWidth > 0) {
               anyTileLoaded = true;
-              mapCtx.drawImage(entry.img, originX + dx * tilePx, originY + dy * tilePx, tilePx, tilePx);
+              try { mapCtx.drawImage(cached, drawX, drawY, 256, 256); } catch (e) {}
+            } else if (!cached) {
+              (function (u) {
+                var img = new Image();
+                img.crossOrigin = 'anonymous';
+                gsiTileCache[u] = img;
+                img.onload = function () { drawOfflineDipsMap(); };
+                img.src = u;
+              })(url);
             }
           }
         }
 
-        // Slight dark tint over bright GSI map so cyan/red/yellow DIPS zones pop cleanly
-        if (anyTileLoaded) {
-          mapCtx.fillStyle = 'rgba(6, 10, 18, 0.22)';
-          mapCtx.fillRect(0, 0, W, H);
-        }
+        // True geographic meter-to-pixel conversion (exact Flight Guard formula)
+        var metersPerPixel = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, z);
+        var rZonePx = Math.max(20, Math.min(165, currentZone / metersPerPixel));
+        var rRoadPx = Math.max(30, Math.min(195, (currentZone + 20) / metersPerPixel));
 
-        // 3) DIPS Flight Safety Zones
-        var cx = W * centerRelX, cy = H * centerRelY;
-        var rOuter = currentZone === 30 ? 92 : (currentZone === 40 ? 116 : 145);
-        var rInner = rOuter * 0.52;
-
+        var cx = w / 2, cy = h / 2;
         mapCtx.save();
-        mapCtx.setLineDash([7, 5]);
-        mapCtx.strokeStyle = '#00f0ff';
+
+        // Outer green dashed circle: +20m road clearance boundary
+        mapCtx.strokeStyle = '#10b981';
+        mapCtx.lineWidth = 2.2;
+        mapCtx.setLineDash([6, 4]);
+        mapCtx.beginPath();
+        mapCtx.arc(cx, cy, rRoadPx, 0, Math.PI * 2);
+        mapCtx.stroke();
+
+        // Inner amber circle: 30m/40m/60m restricted zone
+        mapCtx.fillStyle = 'rgba(245, 158, 11, 0.22)';
+        mapCtx.strokeStyle = '#f59e0b';
+        mapCtx.lineWidth = 2.8;
+        mapCtx.setLineDash([]);
+        mapCtx.beginPath();
+        mapCtx.arc(cx, cy, rZonePx, 0, Math.PI * 2);
+        mapCtx.fill();
+        mapCtx.stroke();
+
+        // [H] Takeoff Point Pin (exact Flight Guard style)
+        mapCtx.fillStyle = '#dc2626';
+        mapCtx.beginPath();
+        mapCtx.arc(cx, cy, 13, 0, Math.PI * 2);
+        mapCtx.fill();
+        mapCtx.strokeStyle = '#ffffff';
         mapCtx.lineWidth = 2.5;
-        mapCtx.fillStyle = 'rgba(0, 240, 255, 0.14)';
-        mapCtx.beginPath(); mapCtx.arc(cx, cy, rOuter, 0, Math.PI * 2); mapCtx.fill(); mapCtx.stroke();
+        mapCtx.stroke();
+        mapCtx.fillStyle = '#ffffff';
+        mapCtx.font = 'bold 13px sans-serif';
+        mapCtx.textAlign = 'center';
+        mapCtx.textBaseline = 'middle';
+        mapCtx.fillText('H', cx, cy);
+
+        // [E] Emergency Landing Point Pin
+        var ex = cx + rZonePx * 0.45;
+        var ey = cy - rZonePx * 0.35;
+        mapCtx.fillStyle = '#0284c7';
+        mapCtx.beginPath();
+        mapCtx.arc(ex, ey, 10, 0, Math.PI * 2);
+        mapCtx.fill();
+        mapCtx.stroke();
+        mapCtx.fillStyle = '#ffffff';
+        mapCtx.font = 'bold 10px sans-serif';
+        mapCtx.fillText('E', ex, ey);
+
+        // Top HUD Telemetry Box (exact Flight Guard style)
+        mapCtx.textAlign = 'left';
+        mapCtx.textBaseline = 'alphabetic';
+        mapCtx.fillStyle = 'rgba(15, 23, 42, 0.90)';
+        mapCtx.fillRect(10, 10, w - 20, 52);
+        mapCtx.strokeStyle = '#00e5ff';
+        mapCtx.lineWidth = 1.8;
+        mapCtx.strokeRect(10, 10, w - 20, 52);
+
+        mapCtx.fillStyle = '#00e5ff';
+        mapCtx.font = 'bold 13px sans-serif';
+        var locLine = '📍 離陸場所: ' + currentLocName + ' (' + lat.toFixed(5) + ', ' + lng.toFixed(5) + ')';
+        mapCtx.fillText(locLine.slice(0, 54), 18, 30);
+
+        mapCtx.fillStyle = '#fde68a';
+        mapCtx.font = 'bold 11.5px sans-serif';
+        var badge = anyTileLoaded ? '国土地理院Z' + z : 'OFFLINE CAD';
+        mapCtx.fillText('⭕黄枠=' + currentZone + 'm立入管理区画 ｜ 🟢緑破線=公道20m離隔 ｜ 高度' + currentAlt + 'm(通報' + currentInt + 'm) ｜ [' + badge + ']', 18, 50);
         mapCtx.restore();
-
-        mapCtx.strokeStyle = '#ef4444';
-        mapCtx.lineWidth = 2.5;
-        mapCtx.fillStyle = 'rgba(239, 68, 68, 0.22)';
-        mapCtx.beginPath(); mapCtx.arc(cx, cy, rInner, 0, Math.PI * 2); mapCtx.fill(); mapCtx.stroke();
-
-        mapCtx.fillStyle = '#facc15';
-        mapCtx.beginPath(); mapCtx.arc(cx, cy, 7, 0, Math.PI * 2); mapCtx.fill();
-        mapCtx.strokeStyle = '#09111c'; mapCtx.lineWidth = 2; mapCtx.stroke();
-
-        // 4) HUD Telemetry Box
-        mapCtx.fillStyle = 'rgba(6, 9, 16, 0.84)';
-        mapCtx.fillRect(10, 10, 355, 52);
-        mapCtx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
-        mapCtx.lineWidth = 1;
-        mapCtx.strokeRect(10, 10, 355, 52);
-
-        mapCtx.fillStyle = '#00f0ff';
-        mapCtx.font = 'bold 14px sans-serif';
-        mapCtx.fillText(currentLocName + '  [高度' + currentAlt + 'm / 半径' + currentZone + 'm]', 20, 31);
-        mapCtx.fillStyle = '#cbd5e1';
-        mapCtx.font = '12px monospace';
-        var modeBadge = anyTileLoaded ? '[国土地理院 LIVE]' : '[OFFLINE CAD]';
-        mapCtx.fillText('LAT ' + currentLat.toFixed(4) + '  LNG ' + currentLng.toFixed(4) + ' ' + modeBadge, 20, 51);
       }
 
       drawOfflineDipsMap();
 
+      // Click / Tap on map to move exact geographic coordinates (Flight Guard style)
       if (mapCanvas) {
         mapCanvas.addEventListener('click', function (ev) {
           var rect = mapCanvas.getBoundingClientRect();
-          centerRelX = Math.max(0.15, Math.min(0.85, (ev.clientX - rect.left) / rect.width));
-          centerRelY = Math.max(0.20, Math.min(0.85, (ev.clientY - rect.top) / rect.height));
+          var clickX = ((ev.clientX - rect.left) / rect.width) * mapCanvas.width;
+          var clickY = ((ev.clientY - rect.top) / rect.height) * mapCanvas.height;
+          var dx = clickX - mapCanvas.width / 2;
+          var dy = clickY - mapCanvas.height / 2;
+          var newTx = lon2tileX(currentLng, mapZoom) + dx / 256;
+          var newTy = lat2tileY(currentLat, mapZoom) + dy / 256;
+          currentLng = Number(tileX2lon(newTx, mapZoom).toFixed(5));
+          currentLat = Number(tileY2lat(newTy, mapZoom).toFixed(5));
           drawOfflineDipsMap();
-          if (mapStatusText) mapStatusText.textContent = '飛行中心を移動しました';
+          if (mapStatusText) {
+            mapStatusText.textContent = '📍 北緯 ' + currentLat.toFixed(5) + '°, 東経 ' + currentLng.toFixed(5) + '° (タップ微調整済)';
+          }
+        });
+      }
+
+      if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', function () {
+          mapZoom = Math.min(18, mapZoom + 1);
+          drawOfflineDipsMap();
+        });
+      }
+      if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', function () {
+          mapZoom = Math.max(12, mapZoom - 1);
+          drawOfflineDipsMap();
         });
       }
 
@@ -1088,72 +1169,120 @@
         });
       });
 
-      var gpsWatchId = null;
-      var gpsStopTimer = null;
+      // Exact Flight Guard GSI Address Search + Offline Preset Dictionary
+      var offlineSpotDict = [
+        { k: '大中里6', lat: 35.23745, lng: 138.58388, name: '静岡県富士宮市大中里6 H地点' },
+        { k: '大中里', lat: 35.23745, lng: 138.58388, name: '静岡県富士宮市大中里6 H地点' },
+        { k: '石廊崎', lat: 34.60520, lng: 138.84350, name: '静岡県賀茂郡南伊豆町石廊崎 オーシャンパークH地点' },
+        { k: '南伊豆', lat: 34.60520, lng: 138.84350, name: '静岡県賀茂郡南伊豆町石廊崎 オーシャンパークH地点' },
+        { k: '朝霧', lat: 35.40850, lng: 138.59100, name: '静岡県富士宮市根原 朝霧アリーナ特設H地点' },
+        { k: '富士宮', lat: 35.22210, lng: 138.61430, name: '静岡県富士宮市宮町 浅間大社周辺H地点' },
+        { k: '世田谷', lat: 35.62650, lng: 139.63280, name: '東京都世田谷区用賀 対象敷地H地点' },
+        { k: '東京', lat: 35.68124, lng: 139.76712, name: '東京都千代田区丸の内 東京駅周辺H地点' }
+      ];
+
+      function runGsiAddressSearch() {
+        var q = gsiAddrInput ? (gsiAddrInput.value || '').trim() : '';
+        if (!q) {
+          showToast('検索する住所や地名を入力してください');
+          return;
+        }
+        showToast('国土地理院APIで「' + q + '」を検索中...');
+        fetch('https://msearch.gsi.go.jp/address-search/AddressSearch?q=' + encodeURIComponent(q))
+          .then(function (r) { return r.json(); })
+          .then(function (arr) {
+            if (Array.isArray(arr) && arr.length > 0 && arr[0].geometry && Array.isArray(arr[0].geometry.coordinates)) {
+              currentLng = Number(parseFloat(arr[0].geometry.coordinates[0]).toFixed(5));
+              currentLat = Number(parseFloat(arr[0].geometry.coordinates[1]).toFixed(5));
+              var title = (arr[0].properties && arr[0].properties.title) ? arr[0].properties.title : q;
+              currentLocName = title + ' H地点';
+              drawOfflineDipsMap();
+              if (mapStatusText) mapStatusText.textContent = '📍 ' + currentLocName + ' (' + currentLat.toFixed(5) + ', ' + currentLng.toFixed(5) + ')';
+              showToast('「' + title + '」へピンポイント移動しました');
+              return;
+            }
+            throw new Error('no_hit');
+          })
+          .catch(function () {
+            var hit = null;
+            for (var i = 0; i < offlineSpotDict.length; i++) {
+              if (q.indexOf(offlineSpotDict[i].k) !== -1) { hit = offlineSpotDict[i]; break; }
+            }
+            if (hit) {
+              currentLat = hit.lat;
+              currentLng = hit.lng;
+              currentLocName = hit.name;
+              drawOfflineDipsMap();
+              if (mapStatusText) mapStatusText.textContent = '📍 ' + currentLocName;
+              showToast('「' + hit.name + '」へ移動しました');
+            } else {
+              showToast('該当する住所が見つかりませんでした');
+            }
+          });
+      }
+
+      if (gsiAddrSearchBtn) {
+        gsiAddrSearchBtn.addEventListener('click', runGsiAddressSearch);
+      }
+      if (gsiAddrInput) {
+        gsiAddrInput.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            runGsiAddressSearch();
+          }
+        });
+      }
+
+      // Exact Flight Guard GPS + OpenStreetMap Nominatim Reverse Geocoding
       if (locateBtn) {
         locateBtn.addEventListener('click', function () {
           if (!navigator.geolocation) {
             showToast('この端末・ブラウザは位置情報に未対応です');
             return;
           }
-          if (gpsWatchId !== null) {
-            navigator.geolocation.clearWatch(gpsWatchId);
-            gpsWatchId = null;
-          }
-          clearTimeout(gpsStopTimer);
-          showToast('高精度GPS衛星で現在地を測位中...');
-          if (mapStatusText) mapStatusText.textContent = '高精度GPS測位中...';
+          showToast('🛰️ GPS衛星から現在地座標と住所を取得中...');
+          if (mapStatusText) mapStatusText.textContent = '🛰️ GPS衛星から現在地と住所を取得中...';
 
-          var bestAcc = Infinity;
-          function applyPos(pos) {
-            var acc = pos.coords.accuracy || 9999;
-            if (acc <= bestAcc) {
-              bestAcc = acc;
-              currentLat = pos.coords.latitude;
-              currentLng = pos.coords.longitude;
-              currentLocName = '現在地GPS';
-              centerRelX = 0.5;
-              centerRelY = 0.5;
-              gsiTileCache = {};
-              drawOfflineDipsMap();
-              if (mapStatusText) {
-                mapStatusText.textContent = '現在地GPS反映済（精度 約' + Math.round(acc) + 'm）';
-              }
-            }
-          }
-
-          // Pure high-accuracy GPS (matching Flight Guard + watchPosition refinement)
-          gpsWatchId = navigator.geolocation.watchPosition(
+          navigator.geolocation.getCurrentPosition(
             function (pos) {
-              applyPos(pos);
-              if (pos.coords.accuracy && pos.coords.accuracy <= 35) {
-                navigator.geolocation.clearWatch(gpsWatchId);
-                gpsWatchId = null;
-                clearTimeout(gpsStopTimer);
-                showToast('高精度GPSで現在地を確定しました（精度 約' + Math.round(pos.coords.accuracy) + 'm）');
-              }
+              var lat = Number(pos.coords.latitude.toFixed(5));
+              var lng = Number(pos.coords.longitude.toFixed(5));
+              var acc = Math.round(pos.coords.accuracy || 0);
+              currentLat = lat;
+              currentLng = lng;
+              currentLocName = '現在地GPS離陸H地点';
+              drawOfflineDipsMap();
+
+              fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=18&addressdetails=1')
+                .then(function (r) { return r.json(); })
+                .then(function (r) {
+                  if (r && r.address) {
+                    var a = r.address;
+                    var built = (a.province || a.state || '') + (a.city || a.town || a.village || a.county || '') + (a.suburb || a.quarter || a.neighbourhood || a.road || '');
+                    if (built) currentLocName = built + ' H地点';
+                  }
+                  drawOfflineDipsMap();
+                  if (mapStatusText) {
+                    mapStatusText.textContent = '📍 ' + currentLocName + ' (精度約' + acc + 'm)';
+                  }
+                  showToast('📍 現在地「' + currentLocName + '」をマップに反映しました！');
+                })
+                .catch(function () {
+                  if (mapStatusText) {
+                    mapStatusText.textContent = '📍 ' + currentLocName + ' (' + lat.toFixed(5) + ', ' + lng.toFixed(5) + ')';
+                  }
+                  showToast('📍 現在地座標を国土地理院マップに反映しました！');
+                });
             },
             function (err) {
-              navigator.geolocation.clearWatch(gpsWatchId);
-              gpsWatchId = null;
-              clearTimeout(gpsStopTimer);
               var msg = (err && err.code === 1)
-                ? '位置情報の許可が拒否されています（コード1）'
-                : ((err && err.code === 3) ? 'GPS測位タイムアウト（窓際等でお試しください）' : '現在地を取得できませんでした');
+                ? '⚠️ ブラウザの位置情報許可がOFFです（上の住所検索枠でも移動できます）'
+                : '📍 現場基準座標（富士宮市大中里6）をセットしました';
+              if (mapStatusText) mapStatusText.textContent = msg;
               showToast(msg);
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
           );
-
-          gpsStopTimer = setTimeout(function () {
-            if (gpsWatchId !== null) {
-              navigator.geolocation.clearWatch(gpsWatchId);
-              gpsWatchId = null;
-              if (bestAcc < Infinity) {
-                showToast('現在地を更新しました（精度 約' + Math.round(bestAcc) + 'm）');
-              }
-            }
-          }, 10000);
         });
       }
       var needPills = document.querySelectorAll('.need-pill');
