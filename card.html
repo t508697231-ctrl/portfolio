@@ -909,7 +909,7 @@
         eMarker = L.marker([lat - 0.00004, lng + 0.00005], { icon: eIcon }).addTo(gsiMap);
       }
 
-      // Offline-First Self-Contained DIPS Mini-CAD Map Engine (Zero external CDN)
+      // Hybrid GSI Tile + Offline-First Self-Contained Canvas DIPS Engine (Zero external CDN)
       var mapCanvas = document.getElementById('dipsMapCanvas');
       var mapCtx = mapCanvas ? mapCanvas.getContext('2d') : null;
       var mapStatusText = document.getElementById('mapStatusText');
@@ -922,14 +922,44 @@
       var currentLocName = '静岡県富士宮市';
       var mapLayerMode = 'std';
       var centerRelX = 0.5, centerRelY = 0.52;
+      var gsiTileCache = {};
+
+      function latLngToTile(lat, lng, z) {
+        var n = Math.pow(2, z);
+        var x = ((lng + 180) / 360) * n;
+        var latRad = (lat * Math.PI) / 180;
+        var y = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
+        return { tx: Math.floor(x), ty: Math.floor(y), fx: x - Math.floor(x), fy: y - Math.floor(y) };
+      }
+
+      function getGsiTile(mode, z, tx, ty) {
+        var key = mode + '_' + z + '_' + tx + '_' + ty;
+        if (gsiTileCache[key]) return gsiTileCache[key];
+        var ext = mode === 'photo' ? 'jpg' : 'png';
+        var sub = mode === 'photo' ? 'seamlessphoto' : 'std';
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        var entry = { img: img, loaded: false, failed: false };
+        gsiTileCache[key] = entry;
+        img.onload = function () {
+          entry.loaded = true;
+          drawOfflineDipsMap();
+        };
+        img.onerror = function () {
+          entry.failed = true;
+        };
+        img.src = 'https://cyberjapandata.gsi.go.jp/xyz/' + sub + '/' + z + '/' + tx + '/' + ty + '.' + ext;
+        return entry;
+      }
 
       function drawOfflineDipsMap() {
         if (!mapCtx) return;
         var W = mapCanvas.width, H = mapCanvas.height;
         mapCtx.clearRect(0, 0, W, H);
+
+        // 1) Offline dark fallback backdrop
         mapCtx.fillStyle = mapLayerMode === 'std' ? '#09111c' : '#0d1b18';
         mapCtx.fillRect(0, 0, W, H);
-
         mapCtx.strokeStyle = mapLayerMode === 'std' ? 'rgba(56, 189, 248, 0.14)' : 'rgba(52, 211, 153, 0.14)';
         mapCtx.lineWidth = 1;
         for (var gx = 0; gx < W; gx += 38) {
@@ -939,11 +969,31 @@
           mapCtx.beginPath(); mapCtx.moveTo(0, gy); mapCtx.lineTo(W, gy); mapCtx.stroke();
         }
 
-        mapCtx.strokeStyle = mapLayerMode === 'std' ? 'rgba(148, 163, 184, 0.28)' : 'rgba(167, 243, 208, 0.25)';
-        mapCtx.lineWidth = 3;
-        mapCtx.beginPath(); mapCtx.moveTo(0, H * 0.68); mapCtx.quadraticCurveTo(W * 0.45, H * 0.48, W, H * 0.34); mapCtx.stroke();
-        mapCtx.beginPath(); mapCtx.moveTo(W * 0.32, 0); mapCtx.lineTo(W * 0.56, H); mapCtx.stroke();
+        // 2) Overlay real GSI tiles directly onto Canvas when online
+        var zoom = 16;
+        var tInfo = latLngToTile(currentLat, currentLng, zoom);
+        var tilePx = 256;
+        var originX = W * 0.5 - tInfo.fx * tilePx;
+        var originY = H * 0.5 - tInfo.fy * tilePx;
+        var anyTileLoaded = false;
 
+        for (var dx = -2; dx <= 2; dx++) {
+          for (var dy = -1; dy <= 1; dy++) {
+            var entry = getGsiTile(mapLayerMode, zoom, tInfo.tx + dx, tInfo.ty + dy);
+            if (entry.loaded) {
+              anyTileLoaded = true;
+              mapCtx.drawImage(entry.img, originX + dx * tilePx, originY + dy * tilePx, tilePx, tilePx);
+            }
+          }
+        }
+
+        // Slight dark tint over bright GSI map so cyan/red/yellow DIPS zones pop cleanly
+        if (anyTileLoaded) {
+          mapCtx.fillStyle = 'rgba(6, 10, 18, 0.22)';
+          mapCtx.fillRect(0, 0, W, H);
+        }
+
+        // 3) DIPS Flight Safety Zones
         var cx = W * centerRelX, cy = H * centerRelY;
         var rOuter = currentZone === 30 ? 92 : (currentZone === 40 ? 116 : 145);
         var rInner = rOuter * 0.52;
@@ -952,31 +1002,33 @@
         mapCtx.setLineDash([7, 5]);
         mapCtx.strokeStyle = '#00f0ff';
         mapCtx.lineWidth = 2.5;
-        mapCtx.fillStyle = 'rgba(0, 240, 255, 0.10)';
+        mapCtx.fillStyle = 'rgba(0, 240, 255, 0.14)';
         mapCtx.beginPath(); mapCtx.arc(cx, cy, rOuter, 0, Math.PI * 2); mapCtx.fill(); mapCtx.stroke();
         mapCtx.restore();
 
         mapCtx.strokeStyle = '#ef4444';
         mapCtx.lineWidth = 2.5;
-        mapCtx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+        mapCtx.fillStyle = 'rgba(239, 68, 68, 0.22)';
         mapCtx.beginPath(); mapCtx.arc(cx, cy, rInner, 0, Math.PI * 2); mapCtx.fill(); mapCtx.stroke();
 
         mapCtx.fillStyle = '#facc15';
         mapCtx.beginPath(); mapCtx.arc(cx, cy, 7, 0, Math.PI * 2); mapCtx.fill();
         mapCtx.strokeStyle = '#09111c'; mapCtx.lineWidth = 2; mapCtx.stroke();
 
-        mapCtx.fillStyle = 'rgba(6, 9, 16, 0.85)';
-        mapCtx.fillRect(10, 10, 340, 52);
+        // 4) HUD Telemetry Box
+        mapCtx.fillStyle = 'rgba(6, 9, 16, 0.84)';
+        mapCtx.fillRect(10, 10, 355, 52);
         mapCtx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
         mapCtx.lineWidth = 1;
-        mapCtx.strokeRect(10, 10, 340, 52);
+        mapCtx.strokeRect(10, 10, 355, 52);
 
         mapCtx.fillStyle = '#00f0ff';
         mapCtx.font = 'bold 14px sans-serif';
         mapCtx.fillText(currentLocName + '  [高度' + currentAlt + 'm / 半径' + currentZone + 'm]', 20, 31);
         mapCtx.fillStyle = '#cbd5e1';
         mapCtx.font = '12px monospace';
-        mapCtx.fillText('LAT ' + currentLat.toFixed(4) + '  LNG ' + currentLng.toFixed(4) + '  [OFFLINE CAD]', 20, 51);
+        var modeBadge = anyTileLoaded ? '[国土地理院 LIVE]' : '[OFFLINE CAD]';
+        mapCtx.fillText('LAT ' + currentLat.toFixed(4) + '  LNG ' + currentLng.toFixed(4) + ' ' + modeBadge, 20, 51);
       }
 
       drawOfflineDipsMap();
@@ -987,7 +1039,7 @@
           centerRelX = Math.max(0.15, Math.min(0.85, (ev.clientX - rect.left) / rect.width));
           centerRelY = Math.max(0.20, Math.min(0.85, (ev.clientY - rect.top) / rect.height));
           drawOfflineDipsMap();
-          if (mapStatusText) mapStatusText.textContent = '飛行中心を移動しました（オフライン作図OK）';
+          if (mapStatusText) mapStatusText.textContent = '飛行中心を移動しました';
         });
       }
 
