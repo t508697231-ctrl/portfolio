@@ -1134,6 +1134,17 @@
           if (mapStatusText) {
             mapStatusText.textContent = '📍 北緯 ' + currentLat.toFixed(5) + '°, 東経 ' + currentLng.toFixed(5) + '° (タップ微調整済)';
           }
+          fetch('https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=' + currentLat + '&lon=' + currentLng)
+            .then(function (r) { return r.json(); })
+            .then(function (r) {
+              if (r && r.results && r.results.lv01Nm) {
+                var mc = String(r.results.muniCd || '');
+                var city = mc === '22207' ? '静岡県富士宮市' : (mc === '22304' ? '静岡県賀茂郡南伊豆町' : '');
+                currentLocName = city + r.results.lv01Nm + ' H地点';
+                drawOfflineDipsMap();
+                if (mapStatusText) mapStatusText.textContent = '📍 ' + currentLocName + ' (' + currentLat.toFixed(5) + ', ' + currentLng.toFixed(5) + ')';
+              }
+            }).catch(function () {});
         });
       }
 
@@ -1265,13 +1276,15 @@
               currentLocName = '現在地GPS離陸H地点';
               drawOfflineDipsMap();
 
-              fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=18&addressdetails=1')
+              var MUNI_MAP = { '22207': '静岡県富士宮市', '22210': '静岡県富士市', '22301': '静岡県賀茂郡東伊豆町', '22304': '静岡県賀茂郡南伊豆町', '22101': '静岡県静岡市葵区', '13101': '東京都千代田区', '13112': '東京都世田谷区', '13103': '東京都港区' };
+              fetch('https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=' + lat + '&lon=' + lng)
                 .then(function (r) { return r.json(); })
                 .then(function (r) {
-                  if (r && r.address) {
-                    var a = r.address;
-                    var built = (a.province || a.state || '') + (a.city || a.town || a.village || a.county || '') + (a.suburb || a.quarter || a.neighbourhood || a.road || '');
-                    if (built) currentLocName = built + ' H地点';
+                  if (r && r.results) {
+                    var mc = String(r.results.muniCd || '');
+                    var town = String(r.results.lv01Nm || '').replace(/^[-0-9]+$/, '');
+                    var city = MUNI_MAP[mc] || (mc.indexOf('22') === 0 ? '静岡県' : (mc.indexOf('13') === 0 ? '東京都' : '現在地'));
+                    if (city || town) currentLocName = city + town + ' H地点';
                   }
                   drawOfflineDipsMap();
                   if (mapStatusText) {
