@@ -695,6 +695,18 @@
 
   <script>
     (function () {
+      var toastTimer = null;
+      function showToast(msg) {
+        var el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.remove('hidden', 'opacity-0');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          el.classList.add('hidden');
+        }, 2600);
+      }
+
       var isOtherworld = false;
       var soundEnabled = false;
       var audioCtx = null;
